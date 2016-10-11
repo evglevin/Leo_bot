@@ -89,3 +89,4 @@ ENV/
 .ropeproject
 .idea/
 bot_config.py
+/Data/
