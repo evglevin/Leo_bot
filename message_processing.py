@@ -3,14 +3,14 @@ import sqlite3
 from collections import Counter
 from string import punctuation
 from math import sqrt
-from Queue import Queue
-from threading import Thread
+from bot_config import PHRASES_DATABASE_NAME
 
 
 connection = None
 cursor = None
 
-def db_open_connection():
+
+def db_open_connection(text):
     """ Initialize the connection to the database
     and create the tables needed by the program
     """
@@ -18,8 +18,14 @@ def db_open_connection():
     # initialize the connection to the database
     global connection
     global cursor
-    connection = sqlite3.connect('Data/phrases.sqlite')
-    cursor = connection.cursor()
+    try:
+        connection = sqlite3.connect(PHRASES_DATABASE_NAME)
+        cursor = connection.cursor()
+        text = text_processing(text)
+        db_close_connection()
+        return text
+    except:
+        pass
 
     # create the tables needed by the program
     try:
