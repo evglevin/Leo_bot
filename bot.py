@@ -2,7 +2,8 @@ from bot_config import TELEGRAM_TOKEN
 import telebot  #Python implementation for the Telegram Bot API
 from message_processing import db_open_connection, db_close_connection, text_processing
 import requests
-from speechKit import speech_to_text, SpeechException
+from speechKit import speech_to_text, SpeechException, text_to_speech
+import asyncio
 
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
@@ -22,12 +23,18 @@ def voice_processing(message):
     try:
         # appeal to our new module
         text = speech_to_text(bytes=file.content)
-        bot.send_message(message.chat.id, text)
-        text = db_open_connection(text)
-        bot.send_message(message.chat.id, text)
+        ans = db_open_connection(text)
+        file = text_to_speech(ans, 'wav', 'ermil')
+        data = file.read()
+        bot.send_voice(message.chat.id, data)
+        bot.send_message(message.chat.id, ans)
     except SpeechException:
         # Handling the case where the detection failed
-        bot.send_message(message.chat.id, 'Я тебя не понимаю')
+        ans = 'Я тебя не понимаю'
+        file = text_to_speech(ans, 'wav', 'ermil')
+        data = file.read()
+        bot.send_voice(message.chat.id, data)
+        bot.send_message(message.chat.id, ans)
 
 if __name__ == '__main__':
      bot.polling(none_stop=True)
