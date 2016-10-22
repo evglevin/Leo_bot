@@ -8,13 +8,14 @@ from bot_config import PHRASES_DATABASE_NAME
 
 connection = None
 cursor = None
+incert = False
 
-
-def db_open_connection(text):
+def db_connection(text, incert_in = False):
     """ Initialize the connection to the database
     and create the tables needed by the program
     """
-
+    global incert
+    incert = incert_in
     # initialize the connection to the database
     global connection
     global cursor
@@ -66,8 +67,9 @@ def get_id(entityName, text):
     if row:
         return row[0]
     else:
-        cursor.execute('INSERT INTO ' + tableName + ' (' + columnName + ') VALUES (?)', (text,))
-        return cursor.lastrowid
+        if incert:
+            cursor.execute('INSERT INTO ' + tableName + ' (' + columnName + ') VALUES (?)', (text,))
+            return cursor.lastrowid
 
 
 def get_words(text):
@@ -90,14 +92,15 @@ def text_processing(text):
     if H == '':
         return -1
     # store the association between the bot's message words and the user's response
-    words = get_words(B)
-    words_length = sum([n * len(word) for word, n in words])
-    sentence_id = get_id('sentence', H)
-    for word, n in words:
-        word_id = get_id('word', word)
-        weight = sqrt(n / float(words_length))
-        cursor.execute('INSERT INTO associations VALUES (?, ?, ?)', (word_id, sentence_id, weight))
-    connection.commit()
+    if incert:
+        words = get_words(B)
+        words_length = sum([n * len(word) for word, n in words])
+        sentence_id = get_id('sentence', H)
+        for word, n in words:
+            word_id = get_id('word', word)
+            weight = sqrt(n / float(words_length))
+            cursor.execute('INSERT INTO associations VALUES (?, ?, ?)', (word_id, sentence_id, weight))
+        connection.commit()
     # retrieve the most likely answer from the database
     cursor.execute('CREATE TEMPORARY TABLE results(sentence_id INT, sentence TEXT, weight REAL)')
     words = get_words(H)
@@ -126,4 +129,3 @@ def text_processing(text):
 def db_close_connection():
     global connection
     connection.close()
-

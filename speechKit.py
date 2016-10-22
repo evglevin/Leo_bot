@@ -7,7 +7,6 @@ import subprocess
 import tempfile
 import os
 
-import aiohttp
 import urllib.request
 import urllib.parse
 import urllib
@@ -32,17 +31,17 @@ CHUNK_SIZE = 1024 ** 2
 
 def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic='notes', lang='ru-RU',
                    key=YANDEX_API_KEY):
-    # Если передан файл
+    # If the file is transferred
     if filename:
         with open(filename, 'br') as file:
             bytes = file.read()
     if not bytes:
         raise Exception('Neither file name nor bytes provided.')
 
-    # Конвертирование в нужный формат
+    # Conversion to the desired format
     bytes = convert_to_pcm16b16000r(in_bytes=bytes)
 
-    # Формирование тела запроса к Yandex API
+    # The forming of the body of the request to Yandex API
     url = YANDEX_ASR_PATH + '?uuid=%s&key=%s&topic=%s&lang=%s' % (
         request_id,
         key,
@@ -50,10 +49,10 @@ def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic
         lang
     )
 
-    # Считывание блока байтов
+    # Reading bytes block
     chunks = read_chunks(CHUNK_SIZE, bytes)
 
-    # Установление соединения и формирование запроса
+    # Establishing a connection and query
     connection = httplib2.HTTPConnectionWithTimeout(YANDEX_ASR_HOST)
 
     connection.connect()
@@ -62,7 +61,7 @@ def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic
     connection.putheader('Content-Type', 'audio/x-pcm;bit=16;rate=16000')
     connection.endheaders()
 
-    # Отправка байтов блоками
+    # Sending bytes by blocks
     for chunk in chunks:
         connection.send(('%s\r\n' % hex(len(chunk))[2:]).encode())
         connection.send(chunk)
@@ -71,7 +70,7 @@ def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic
     connection.send('0\r\n\r\n'.encode())
     response = connection.getresponse()
 
-    # Обработка ответа сервера
+    # Processing server response
     if response.code == 200:
         response_text = response.read()
         xml = XmlElementTree.fromstring(response_text)
@@ -88,7 +87,7 @@ def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic
             if max_confidence != - float("inf"):
                 return text
             else:
-                # Создавать собственные исключения для обработки бизнес-логики - правило хорошего тона
+                # Creating custom exceptions for handling business logic
                 raise SpeechException('No text found.\n\nResponse:\n%s' % (response_text))
         else:
             raise SpeechException('No text found.\n\nResponse:\n%s' % (response_text))
@@ -96,7 +95,7 @@ def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic
         raise SpeechException('Unknown error.\nCode: %s\n\n%s' % (response.code, response.read()))
 
 
-# Создание своего исключения
+# Creating own exception
 class SpeechException(Exception):
     pass
 
@@ -110,7 +109,7 @@ def convert_to_pcm16b16000r(in_filename=None, in_bytes=None):
             temp_in_file.close()
         if not in_filename:
             raise Exception('Neither input file name nor input bytes is specified.')
-        # Запрос в командную строку для обращения к FFmpeg
+        # The request to the command line to access the FFmpeg
         command = ['ffmpeg',
                    '-i', in_filename,
                    '-f', 's16le',
@@ -131,16 +130,16 @@ def convert_to_pcm16b16000r(in_filename=None, in_bytes=None):
 
 def text_to_speech(text, audio_format, speaker):
     """
-    text=<текст для генерации> - "гот%2bов"
-    format=<формат аудио файла> - "mp3", "wav"
-    lang=<язык> - "ru‑RU"
-    speaker=<голос> - female: jane, omazh; male: zahar, ermil
-    key=<API‑ключ>
+    text=<text for generation> - "гот%2bов"
+    format=<file format> - "mp3", "wav"
+    lang=<language> - "ru‑RU"
+    speaker= <female: jane, omazh; male: zahar, ermil>
+    key=<API‑key>
 
-    [emotion=<окраска голоса>] - neutral(нейтральный), evil (злой), mixed (переменная окраска)
-    [drunk=<окраска голоса>] - true, false
-    [ill=<окраска голоса>] - true, false
-    [robot=<окраска голоса>] - true, false
+    [emotion = <voice coloring>] - neutral, evil, mixed
+    [drunk = <voice coloring>] - true, false
+    [ill = <voice coloring>] - true, false
+    [robot = <voice coloring>] - true, false
     """
     key = YANDEX_API_KEY
     url = 'https://tts.voicetech.yandex.net/generate?' \
