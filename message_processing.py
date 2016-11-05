@@ -5,7 +5,7 @@ from string import punctuation
 from math import sqrt
 from bot_config import PHRASES_DATABASE_NAME
 
-
+B = 'abracadabra'
 connection = None
 cursor = None
 incert = False
@@ -86,7 +86,7 @@ def get_words(text):
 def text_processing(text):
     global connection
     global cursor
-    B = 'Hello'
+    global B
     # Handles incoming user request and returns a response
     H = text.strip()
     if H == '':
