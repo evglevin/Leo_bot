@@ -3,14 +3,14 @@ import sqlite3
 from collections import Counter
 from string import punctuation
 from math import sqrt
-from bot_config import PHRASES_DATABASE_NAME
+from bot_config import DATABASE_NAME
 
-B = 'abracadabra'
+
 connection = None
 cursor = None
 incert = False
 
-def db_connection(text, incert_in = False):
+def db_connection(chat_id, text, incert_in = False):
     """ Initialize the connection to the database
     and create the tables needed by the program
     """
@@ -20,9 +20,9 @@ def db_connection(text, incert_in = False):
     global connection
     global cursor
     try:
-        connection = sqlite3.connect(PHRASES_DATABASE_NAME)
+        connection = sqlite3.connect(DATABASE_NAME)
         cursor = connection.cursor()
-        text = text_processing(text)
+        text = text_processing(chat_id, text)
         db_close_connection()
         return text
     except:
@@ -48,6 +48,11 @@ def db_connection(text, incert_in = False):
                 word_id INT NOT NULL,
                 sentence_id INT NOT NULL,
                 weight REAL NOT NULL)
+        ''')
+        cursor.execute('''
+            CREATE TABLE last_messages (
+                chat_id INT NOT NULL,
+                last_message TEXT UNIQUE)
         ''')
     except:
         pass
@@ -83,10 +88,18 @@ def get_words(text):
     return Counter(wordsList).items()
 
 
-def text_processing(text):
+def text_processing(chat_id, text):
     global connection
     global cursor
-    global B
+
+    cursor.execute('SELECT last_message FROM last_messages WHERE chat_id = ?', (chat_id,))
+    row = cursor.fetchone()
+    if row:
+        B = row[0]
+    else:
+        B = 'abracadabra'
+        cursor.execute('INSERT INTO last_messages VALUES (?,?)', (chat_id,B))
+
     # Handles incoming user request and returns a response
     H = text.strip()
     if H == '':
@@ -123,6 +136,10 @@ def text_processing(text):
     # tell the database the sentence has been used once more, and prepare the sentence
     B = row[1]
     cursor.execute('UPDATE sentences SET used=used+1 WHERE rowid=?', (row[0],))
+    connection.commit()
+
+    cursor.execute('UPDATE last_messages SET last_message=?  WHERE chat_id=?', (B, chat_id))
+    connection.commit()
     return B
 
 

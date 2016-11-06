@@ -9,7 +9,7 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 @bot.message_handler(content_types=["text"])
 def text_answer(message):
-    ans = db_connection(message.text, True)
+    ans = db_connection(message.chat.id, message.text, True)
     bot.send_message(message.chat.id, ans)
 
 @bot.message_handler(content_types=['voice'])
@@ -21,7 +21,7 @@ def voice_processing(message):
     try:
         # appeal to our new module
         text = speech_to_text(bytes=file.content)
-        ans = db_connection(text, False)
+        ans = db_connection(message.chat.id, text, False)
         file = text_to_speech(ans, 'wav', 'ermil')
         data = file.read()
         bot.send_voice(message.chat.id, data)
