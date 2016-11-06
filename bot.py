@@ -9,8 +9,9 @@ bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 @bot.message_handler(content_types=["text"])
 def text_answer(message):
-    ans = db_connection(message.chat.id, message.text, True)
-    bot.send_message(message.chat.id, ans)
+    if '/' not in message.text:
+        ans = db_connection(message.chat.id, message.text, True)
+        bot.send_message(message.chat.id, ans)
 
 @bot.message_handler(content_types=['voice'])
 def voice_processing(message):
