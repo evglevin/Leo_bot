@@ -99,6 +99,7 @@ def text_processing(chat_id, text):
     else:
         B = 'abracadabra'
         cursor.execute('INSERT INTO last_messages VALUES (?,?)', (chat_id,B))
+        connection.commit()
 
     # Handles incoming user request and returns a response
     H = text.strip()
