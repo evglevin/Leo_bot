@@ -10,20 +10,25 @@ connection = None
 cursor = None
 incert = False
 
-def db_connection(chat_id, text, incert_in = False):
-    """ Initialize the connection to the database
-    and create the tables needed by the program
+
+def db_connection(chat_id, text, incert_in=False):
     """
+
+    Initialize the connection to the database
+    and create the tables needed by the program
+
+    """
+
     global incert
     incert = incert_in
-    # initialize the connection to the database
     global connection
     global cursor
+    # initialize the connection to the database
     try:
         connection = sqlite3.connect(DATABASE_NAME)
         cursor = connection.cursor()
         text = text_processing(chat_id, text)
-        db_close_connection()
+        connection.close()
         return text
     except:
         pass
@@ -32,39 +37,43 @@ def db_connection(chat_id, text, incert_in = False):
     try:
         # create the table containing the words
         cursor.execute('''
-            CREATE TABLE words (
-                word TEXT UNIQUE
-            )
-        ''')
+                CREATE TABLE words (
+                    word TEXT UNIQUE
+                )
+            ''')
         # create the table containing the sentences
         cursor.execute('''
-            CREATE TABLE sentences (
-                sentence TEXT UNIQUE,
-                used INT NOT NULL DEFAULT 0
-            )''')
+                CREATE TABLE sentences (
+                    sentence TEXT UNIQUE,
+                    used INT NOT NULL DEFAULT 0
+                )''')
         # create association between weighted words and the next sentence
         cursor.execute('''
-            CREATE TABLE associations (
-                word_id INT NOT NULL,
-                sentence_id INT NOT NULL,
-                weight REAL NOT NULL)
-        ''')
+                CREATE TABLE associations (
+                    word_id INT NOT NULL,
+                    sentence_id INT NOT NULL,
+                    weight REAL NOT NULL)
+            ''')
         cursor.execute('''
-            CREATE TABLE last_messages (
-                chat_id INT NOT NULL,
-                last_message TEXT UNIQUE)
-        ''')
+                CREATE TABLE last_messages (
+                    chat_id INT NOT NULL,
+                    last_message TEXT UNIQUE)
+            ''')
     except:
         pass
 
 
 def get_id(entityName, text):
-    global connection
-    global cursor
-    """ Retrieve an entity's unique ID from the database, given its associated text.
+    """
+
+    Retrieve an entity's unique ID from the database, given its associated text.
     If the row is not already present, it is inserted.
     The entity can either be a sentence or a word.
+
     """
+
+    global connection
+    global cursor
     tableName = entityName + 's'
     columnName = entityName
     cursor.execute('SELECT rowid FROM ' + tableName + ' WHERE ' + columnName + ' = ?', (text,))
@@ -78,10 +87,14 @@ def get_id(entityName, text):
 
 
 def get_words(text):
-    """ Retrieve the words present in a given string of text.
+    """
+
+    Retrieve the words present in a given string of text.
     The return value is a list of tuples where the first member is a lowercase word,
     and the second member the number of time it is present in the text.
+
     """
+
     wordsRegexpString = '(?:\w+|[' + re.escape(punctuation) + ']+)'
     wordsRegexp = re.compile(wordsRegexpString)
     wordsList = wordsRegexp.findall(text.lower())
@@ -98,14 +111,14 @@ def text_processing(chat_id, text):
         B = row[0]
     else:
         B = 'abracadabra'
-        cursor.execute('INSERT INTO last_messages VALUES (?,?)', (chat_id,B))
+        cursor.execute('INSERT INTO last_messages VALUES (?,?)', (chat_id, B))
         connection.commit()
 
     # Handles incoming user request and returns a response
     H = text.strip()
     if H == '':
         return -1
-    # store the association between the bot's message words and the user's response
+    # store the associations between the bot's message words and the user's response
     if incert:
         words = get_words(B)
         words_length = sum([n * len(word) for word, n in words])
@@ -122,8 +135,7 @@ def text_processing(chat_id, text):
     for word, n in words:
         weight = sqrt(n / float(words_length))
         cursor.execute(
-            'INSERT INTO results SELECT associations.sentence_id, sentences.sentence, ?*associations.weight/(4+sentences.used) FROM words INNER JOIN associations ON associations.word_id=words.rowid INNER JOIN sentences ON sentences.rowid=associations.sentence_id WHERE words.word=?',
-            (weight, word,))
+            'INSERT INTO results SELECT associations.sentence_id, sentences.sentence, ?*associations.weight/(4+sentences.used) FROM words INNER JOIN associations ON associations.word_id=words.rowid INNER JOIN sentences ON sentences.rowid=associations.sentence_id WHERE words.word=?', (weight, word,))
     # if matches were found, give the best one
     cursor.execute(
         'SELECT sentence_id, sentence, SUM(weight) AS sum_weight FROM results GROUP BY sentence_id ORDER BY sum_weight DESC LIMIT 1')
@@ -142,8 +154,3 @@ def text_processing(chat_id, text):
     cursor.execute('UPDATE last_messages SET last_message=?  WHERE chat_id=?', (B, chat_id))
     connection.commit()
     return B
-
-
-def db_close_connection():
-    global connection
-    connection.close()

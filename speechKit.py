@@ -2,18 +2,19 @@ import xml.etree.ElementTree as XmlElementTree
 import httplib2
 import uuid
 from bot_config import YANDEX_API_KEY
-
 import subprocess
 import tempfile
 import os
-
 import urllib.request
 import urllib.parse
 import urllib
 
 
 def read_chunks(chunk_size, bytes):
-    """Transfer audio recordings in parts
+    """
+    
+    Transfer audio recordings in parts
+    
     """
     while True:
         chunk = bytes[:chunk_size]
@@ -29,8 +30,7 @@ YANDEX_ASR_HOST = 'asr.yandex.net'
 YANDEX_ASR_PATH = '/asr_xml'
 CHUNK_SIZE = 1024 ** 2
 
-def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic='notes', lang='ru-RU',
-                   key=YANDEX_API_KEY):
+def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic='notes', lang='ru-RU', key=YANDEX_API_KEY):
     # If the file is transferred
     if filename:
         with open(filename, 'br') as file:
@@ -99,6 +99,7 @@ def speech_to_text(filename=None, bytes=None, request_id=uuid.uuid4().hex, topic
 class SpeechException(Exception):
     pass
 
+
 def convert_to_pcm16b16000r(in_filename=None, in_bytes=None):
     with tempfile.TemporaryFile() as temp_out_file:
         temp_in_file = None
@@ -129,18 +130,6 @@ def convert_to_pcm16b16000r(in_filename=None, in_bytes=None):
 
 
 def text_to_speech(text, audio_format, speaker):
-    """
-    text=<text for generation> - "гот%2bов"
-    format=<file format> - "mp3", "wav"
-    lang=<language> - "ru‑RU"
-    speaker= <female: jane, omazh; male: zahar, ermil>
-    key=<API‑key>
-
-    [emotion = <voice coloring>] - neutral, evil, mixed
-    [drunk = <voice coloring>] - true, false
-    [ill = <voice coloring>] - true, false
-    [robot = <voice coloring>] - true, false
-    """
     key = YANDEX_API_KEY
     url = 'https://tts.voicetech.yandex.net/generate?' \
           'text={text}&' \
@@ -150,17 +139,6 @@ def text_to_speech(text, audio_format, speaker):
           'key={key}&'
 
     text = urllib.parse.quote(text)
-
-    url = url.format(
-        text=text,
-        audio_format=audio_format,
-        speaker=speaker,
-        key=key
-    )
-
-    #if a:
-        #url += urllib.parse.urlencode(a)
-
-    #urllib.request.urlretrieve(url, file)
+    url = url.format(text=text, audio_format=audio_format, speaker=speaker, key=key)
     file = urllib.request.urlopen(url)
     return file

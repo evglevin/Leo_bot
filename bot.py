@@ -1,17 +1,20 @@
-from bot_config import TELEGRAM_TOKEN
-import telebot  #Python implementation for the Telegram Bot API
-from message_processing import db_connection
+import telebot  # Python implementation for the Telegram Bot API
 import requests
+from bot_config import TELEGRAM_TOKEN
+from message_processing import db_connection
 from speechKit import speech_to_text, SpeechException, text_to_speech
 
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
+bot = telebot.TeleBot(TELEGRAM_TOKEN)
 
 @bot.message_handler(content_types=["text"])
 def text_answer(message):
     if '/' not in message.text:
         ans = db_connection(message.chat.id, message.text, True)
-        bot.send_message(message.chat.id, ans)
+        if ans != -1:
+            bot.send_message(message.chat.id, ans)
+        else:
+            bot.send_message(message.chat.id, 'Empty message!')
 
 @bot.message_handler(content_types=['voice'])
 def voice_processing(message):
@@ -26,14 +29,10 @@ def voice_processing(message):
         file = text_to_speech(ans, 'wav', 'ermil')
         data = file.read()
         bot.send_voice(message.chat.id, data)
-        bot.send_message(message.chat.id, ans)
+        bot.send_message(message.chat.id, text=ans)
     except SpeechException:
         # Handling the case where the detection failed
-        ans = 'Я тебя не понимаю'
-        file = text_to_speech(ans, 'wav', 'ermil')
-        data = file.read()
-        bot.send_voice(message.chat.id, data)
-        bot.send_message(message.chat.id, ans)
+        bot.send_message(message.chat.id, text='Я вас не понимаю')
 
 if __name__ == '__main__':
      bot.polling(none_stop=True)
