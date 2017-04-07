@@ -136,7 +136,7 @@ def text_to_speech(text, audio_format, speaker):
           'format={audio_format}&' \
           'lang=ru-RU&' \
           'speaker={speaker}&' \
-          'key={key}&'
+          'key={key}'
 
     text = urllib.parse.quote(text)
     url = url.format(text=text, audio_format=audio_format, speaker=speaker, key=key)
