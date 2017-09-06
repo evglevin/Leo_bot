@@ -1,5 +1,5 @@
 # Leo_bot
-Self-learning сonversational Bot for Telegram
+Self-learning сonversational bot for Telegram
 
 # Instruction
 You need to create a file "bot_config.py" in the root folder with the following content:
@@ -9,7 +9,7 @@ DATABASE_NAME = <Path to the sqlite database file>
 YANDEX_API_KEY = <Your Yandex SpeechKit Cloud key>
 ```
 
-You need also to install ffmpeg for the speech recognision.
+You also need to install ffmpeg for the speech recognision.
 
 To start the bot run the "bot.py" file
 
